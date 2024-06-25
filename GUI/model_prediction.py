@@ -4,6 +4,8 @@ import nltk
 import email
 from bs4 import BeautifulSoup
 from nltk.corpus import stopwords
+from sklearn.preprocessing import MinMaxScaler
+from lime.lime_text import LimeTextExplainer
 from nltk.stem import WordNetLemmatizer
 nltk.download('stopwords')
 
@@ -119,3 +121,23 @@ def predict_svm(email):
     preprocessed_email = preprocess_text(email)
     email_vector = vectorizer.transform([preprocessed_email])
     return svm.predict(email_vector)
+
+# Function to predict probabilities using the SVM model
+
+def predict_proba(texts):
+    text_vectors = vectorizer.transform(texts)
+    # SVM does not have predict_proba by default, so use decision_function
+    decision_scores = svm.decision_function(text_vectors)
+    
+    # Ensure the decision_scores is a 2D array
+    if len(decision_scores.shape) == 1:
+        decision_scores = decision_scores.reshape(-1, 1)
+    
+    # Convert decision scores to two-class probabilities
+    probas = np.hstack([1 - decision_scores, decision_scores])
+    probas = np.exp(probas) / np.sum(np.exp(probas), axis=1, keepdims=True)
+    return probas
+
+# Create a LIME explainer
+explainer = LimeTextExplainer(class_names=['Not Spam', 'Spam'])
+
