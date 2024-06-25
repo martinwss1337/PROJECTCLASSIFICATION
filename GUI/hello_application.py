@@ -66,6 +66,10 @@ class HelloApplication(tk.Frame):
                 predic = mp.predict_lrbow(contentofemail)
             elif classf == "Naive Bayes":
                 predic = mp.predict_cnbbow(contentofemail)
+            elif classf == "Support Vector Machine":
+                messagebox.showinfo("Information", "SVM with Bag of Words is not supported.")
+                return
+            
         elif method == "TF-IDF":
             if classf == "Logistic Regression":
                 predic = mp.predict_lrtfidf(contentofemail)
@@ -74,8 +78,8 @@ class HelloApplication(tk.Frame):
             elif classf == "Support Vector Machine":
                 predic = mp.predict_svm(contentofemail)
                 proba = mp.predict_proba([contentofemail])
-                pred_class = "Spam" if proba[0][1] > 0.5 else "Not Spam"
-                self.show_lime_explanation(contentofemail, pred_class)
+                predic_class = "Spam" if proba[0][1] > 0.5 else "Not Spam"
+                self.show_lime_explanation(contentofemail, predic_class)
         
         result = "Spam" if predic == [1] else "Not Spam"
         
@@ -83,16 +87,16 @@ class HelloApplication(tk.Frame):
 
 
     def show_lime_explanation(self, text, pred_class):
-        # Generate LIME explanation
+        # Generate lime explanatation
         explainer = LimeTextExplainer(class_names=['Not Spam', 'Spam'])
         exp = explainer.explain_instance(text, mp.predict_proba, num_features=6, labels=[1 if pred_class == "Spam" else 0])
         
         # Plot explanation
-        fig = exp.as_pyplot_figure(label=1 if pred_class == "Spam" else 0)
-        buf = BytesIO()
-        fig.savefig(buf, format='png')
-        buf.seek(0)
-        img = Image.open(buf)
+        figure = exp.as_pyplot_figure(label=1 if pred_class == "Spam" else 0)
+        temp_buffer = BytesIO()
+        figure.savefig(temp_buffer, format='png')
+        temp_buffer.seek(0)
+        img = Image.open(temp_buffer)
         img = ImageTk.PhotoImage(img)
         
         # Clear previous explanation
@@ -101,22 +105,21 @@ class HelloApplication(tk.Frame):
         
         # Display explanation plot
         label = tk.Label(self.explanation_frame, image=img)
-        label.image = img  # Keep a reference to avoid garbage collection
+        label.image = img 
         label.grid(row=0, column=0, padx=10, pady=10)
 
-        # Clear previous tags and content in highlight_text
+        # Clear previous highlighted content 
         self.highlight_text.delete("1.0", tk.END)
         
-        # Insert original email text
+        # Get the original email to highlight 
         self.highlight_text.insert(tk.END, text + "\n\n")
 
         # Display explanation text and highlight words in email text
         explanation_text = exp.as_list(label=1 if pred_class == "Spam" else 0)
-        for word, weight in explanation_text:
-            # Highlight words in the email text
+        for word, _ in explanation_text: 
             self.highlight_word_in_text(self.highlight_text, word)
-            self.highlight_text.insert(tk.END, f"{word}: {weight:.4f}\n", 'highlight')
 
+    #Method to use in show_lime_explanation
     def highlight_word_in_text(self, text_widget, word):
         start = '1.0'
         while True:
